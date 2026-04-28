@@ -4,7 +4,7 @@ import { storage } from "../utils/storage";
 import type { AuthResponse, LoginCredentials } from "../types/auth.types";
 
 // TODO: Mover a una variable de entorno o constante global
-const API_URL = "http://192.168.1.59:8000/api"; // IP local para desarrollo móvil
+const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
 const api = axios.create({
   baseURL: API_URL,
