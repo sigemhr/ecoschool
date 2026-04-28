@@ -30,7 +30,7 @@ export const authService = {
         ...credentials,
         device_name: credentials.device_name || Platform.OS || "mobile_app",
       };
-      const { data } = await api.post<AuthResponse>("/auth/login", payload);
+      const { data } = await api.post<AuthResponse>("auth/login", payload);
       
       if (data.data.token) {
         await storage.setItem("auth_token", data.data.token);
@@ -45,7 +45,7 @@ export const authService = {
 
   logout: async (): Promise<void> => {
     try {
-      await api.post("/auth/logout");
+      await api.post("auth/logout");
     } finally {
       await storage.deleteItem("auth_token");
       await storage.deleteItem("user_data");
