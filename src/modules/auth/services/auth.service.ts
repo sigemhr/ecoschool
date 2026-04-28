@@ -5,6 +5,7 @@ import type { AuthResponse, LoginCredentials } from "../types/auth.types";
 
 // TODO: Mover a una variable de entorno o constante global
 const API_URL = process.env.EXPO_PUBLIC_API_URL;
+console.log("Servicio iniciado con API_URL:", API_URL);
 
 const api = axios.create({
   baseURL: API_URL,
