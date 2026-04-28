@@ -1,9 +1,11 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { Stack } from 'expo-router';
+import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { useEffect, useState } from 'react';
 import 'react-native-reanimated';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { authService } from '@/src/modules/auth';
 
 export const unstable_settings = {
   anchor: '(tabs)',
@@ -11,10 +13,35 @@ export const unstable_settings = {
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
+  const segments = useSegments();
+  const router = useRouter();
+  const [isReady, setIsReady] = useState(false);
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      const authenticated = await authService.isAuthenticated();
+      const firstSegment = segments[0] as string;
+      const inAuthGroup = firstSegment === '(auth)';
+
+      if (!authenticated && !inAuthGroup) {
+        // Redirigir a login si no está autenticado y no está en el grupo de auth
+        router.replace('/(auth)/login');
+      } else if (authenticated && inAuthGroup) {
+        // Redirigir a tabs si está autenticado y está en el grupo de auth
+        router.replace('/(tabs)');
+      }
+      setIsReady(true);
+    };
+
+    checkAuth();
+  }, [segments]);
+
+  if (!isReady) return null;
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <Stack>
+        <Stack.Screen name="(auth)" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
       </Stack>
