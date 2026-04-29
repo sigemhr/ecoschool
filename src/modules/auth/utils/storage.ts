@@ -5,9 +5,9 @@ export const storage = {
   setItem: async (key: string, value: string) => {
     if (Platform.OS === "web") {
       try {
-        localStorage.setItem(key, value);
+        sessionStorage.setItem(key, value);
       } catch (e) {
-        console.error("Error saving to localStorage", e);
+        console.error("Error saving to sessionStorage", e);
       }
     } else {
       await SecureStore.setItemAsync(key, value);
@@ -17,9 +17,9 @@ export const storage = {
   getItem: async (key: string) => {
     if (Platform.OS === "web") {
       try {
-        return localStorage.getItem(key);
+        return sessionStorage.getItem(key);
       } catch (e) {
-        console.error("Error reading from localStorage", e);
+        console.error("Error reading from sessionStorage", e);
         return null;
       }
     } else {
@@ -30,9 +30,9 @@ export const storage = {
   deleteItem: async (key: string) => {
     if (Platform.OS === "web") {
       try {
-        localStorage.removeItem(key);
+        sessionStorage.removeItem(key);
       } catch (e) {
-        console.error("Error deleting from localStorage", e);
+        console.error("Error deleting from sessionStorage", e);
       }
     } else {
       await SecureStore.deleteItemAsync(key);
