@@ -35,8 +35,8 @@ export default function CourseDetailsScreen() {
         educationService.getPeriods(),
         educationService.getTeachers()
       ]);
-      setPeriods(pData);
-      setTeachers(tData);
+      setPeriods(Array.isArray(pData) ? pData : []);
+      setTeachers(Array.isArray(tData) ? tData : []);
       
       // Intentamos encontrar el curso actual en el catalogo (o podriamos tener un getCourseById)
       // Por ahora, asumimos que tenemos los datos del curso o los refrescamos si es necesario
@@ -156,7 +156,7 @@ export default function CourseDetailsScreen() {
               </TouchableOpacity>
             </View>
 
-            {periods.length === 0 ? (
+            {!Array.isArray(periods) || periods.length === 0 ? (
               <View style={[s.emptyBox, { borderColor: t.border, borderStyle: 'dashed' }]}>
                 <Text style={[s.emptyText, { color: t.textSec }]}>No hay periodos creados aún.</Text>
                 <TouchableOpacity onPress={() => setPeriodModal(true)}>

@@ -64,19 +64,19 @@ export interface SchoolPeriod {
 
 export const educationService = {
   getSchools: async (): Promise<School[]> => {
-    const { data } = await api.get<School[]>('/my-church/schools');
-    return data;
+    const { data } = await api.get<any>('/my-church/schools');
+    return data.data || data;
   },
 
   getCourses: async (schoolId: number): Promise<Course[]> => {
-    const { data } = await api.get<Course[]>(`/my-church/schools/${schoolId}/courses`);
-    return data;
+    const { data } = await api.get<any>(`/my-church/schools/${schoolId}/courses`);
+    return data.data || data;
   },
 
   // Maestros
   getTeachers: async (): Promise<Teacher[]> => {
-    const { data } = await api.get<Teacher[]>('/my-church/teachers');
-    return data;
+    const { data } = await api.get<any>('/my-church/teachers');
+    return data.data || data;
   },
 
   createTeacher: async (payload: { name: string; email?: string; phone?: string }): Promise<Teacher> => {
@@ -94,8 +94,8 @@ export const educationService = {
 
   // Periodos
   getPeriods: async (): Promise<SchoolPeriod[]> => {
-    const { data } = await api.get<SchoolPeriod[]>('/my-church/periods');
-    return data;
+    const { data } = await api.get<any>('/my-church/periods');
+    return data.data || data;
   },
 
   createPeriod: async (payload: { name: string; start_date?: string; end_date?: string }): Promise<SchoolPeriod> => {

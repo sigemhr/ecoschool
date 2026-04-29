@@ -25,8 +25,8 @@ export default function SchoolCoursesScreen() {
         educationService.getCourses(Number(id)),
         educationService.getTeachers()
       ]);
-      setCourses(cData);
-      setTeachers(tData);
+      setCourses(Array.isArray(cData) ? cData : []);
+      setTeachers(Array.isArray(tData) ? tData : []);
       Animated.timing(fadeAnim, { toValue: 1, duration: 500, useNativeDriver: true }).start();
     } catch (error) {
       console.error("Error loading courses/teachers:", error);
@@ -87,7 +87,7 @@ export default function SchoolCoursesScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={t.accent} />}
       >
         <Animated.View style={[s.list, { opacity: fadeAnim }]}>
-          {courses.length === 0 ? (
+          {!Array.isArray(courses) || courses.length === 0 ? (
             <View style={s.empty}>
               <Ionicons name="book-outline" size={48} color={t.textSec} />
               <Text style={[s.emptyText, { color: t.textSec }]}>No hay cursos disponibles para esta escuela.</Text>
