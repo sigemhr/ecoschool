@@ -150,6 +150,15 @@ export const educationService = {
     return data.data || data;
   },
 
+  getPendingFollowUps: async (): Promise<any[]> => {
+    const { data } = await api.get('/teaching/follow-ups');
+    return data;
+  },
+
+  markAsContacted: async (attendanceId: number, notes?: string): Promise<void> => {
+    await api.patch(`/teaching/attendance/${attendanceId}/mark-contacted`, { notes });
+  },
+
   saveAttendance: async (
     periodId: number, 
     date: string, 

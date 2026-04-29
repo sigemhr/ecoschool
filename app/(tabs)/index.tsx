@@ -69,6 +69,7 @@ export default function HomeScreen() {
   const scaleAnims = useRef(SCHOOLS.map(() => new Animated.Value(0.9))).current;
 
   const [assignedPeriods, setAssignedPeriods] = React.useState<any[]>([]);
+  const [pendingFollowUps, setPendingFollowUps] = React.useState<any[]>([]);
   const [isLoading, setIsLoading] = React.useState(false);
 
   useEffect(() => {
@@ -81,8 +82,18 @@ export default function HomeScreen() {
 
     if (user?.role === 'teacher') {
       fetchAssignedPeriods();
+      fetchFollowUps();
     }
   }, [user]);
+
+  const fetchFollowUps = async () => {
+    try {
+      const data = await educationService.getPendingFollowUps();
+      setPendingFollowUps(data);
+    } catch (err) {
+      console.error("Error fetching follow ups:", err);
+    }
+  };
 
   const fetchAssignedPeriods = async () => {
     setIsLoading(true);
@@ -125,6 +136,27 @@ export default function HomeScreen() {
         period_name: period.name
       }
     });
+  };
+
+  const handleMarkContacted = async (item: any) => {
+    Alert.alert(
+      "Confirmar Seguimiento",
+      `¿Deseas marcar que ya contactaste a ${item.enrollment?.student?.name}?`,
+      [
+        { text: "Cancelar", style: "cancel" },
+        { 
+          text: "Sí, marcar", 
+          onPress: async () => {
+            try {
+              await educationService.markAsContacted(item.id);
+              fetchFollowUps();
+            } catch (error) {
+              alert("Error al actualizar seguimiento");
+            }
+          }
+        }
+      ]
+    );
   };
 
   return (
@@ -180,6 +212,41 @@ export default function HomeScreen() {
           <Text style={[s.qLabel, { color: t.textSec }]}>Alumnos</Text>
         </View>
       </Animated.View>
+
+      {/* ─── Pending Follow-ups ────────────────────── */}
+      {user?.role === 'teacher' && pendingFollowUps.length > 0 && (
+        <>
+          <View style={s.sectionHead}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#ef4444' }} />
+              <Text style={[s.sectionTitle, { color: t.text }]}>Seguimiento Pendiente</Text>
+            </View>
+            <Text style={[s.sectionSub, { color: t.textSec }]}>Alumnos ausentes en la última clase</Text>
+          </View>
+          <ScrollView 
+            horizontal 
+            showsHorizontalScrollIndicator={false} 
+            contentContainerStyle={{ paddingHorizontal: 20, gap: 12, paddingBottom: 10 }}
+          >
+            {pendingFollowUps.map((item) => (
+              <TouchableOpacity 
+                key={item.id} 
+                style={[s.followUpCard, { backgroundColor: t.card, borderColor: t.border, shadowColor: t.shadow }]}
+                onPress={() => handleMarkContacted(item)}
+              >
+                <View style={s.followUpBadge}><Ionicons name="call" size={12} color="#fff" /></View>
+                <Text style={[s.followUpName, { color: t.text }]} numberOfLines={1}>{item.enrollment?.student?.name}</Text>
+                <Text style={[s.followUpSub, { color: t.textSec }]} numberOfLines={1}>
+                  {item.session?.topic_name || `Clase del ${new Date(item.attendance_date).toLocaleDateString()}`}
+                </Text>
+                <View style={[s.contactBtn, { backgroundColor: t.accentBg }]}>
+                  <Text style={[s.contactBtnText, { color: t.accent }]}>Marcar Contacto</Text>
+                </View>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </>
+      )}
 
       {/* ─── Section Title ────────────────────────── */}
       <View style={s.sectionHead}>
@@ -395,4 +462,35 @@ const s = StyleSheet.create({
     fontSize: 14,
     textAlign: 'center',
   },
+  // Follow Up Cards
+  followUpCard: {
+    width: 160,
+    padding: 12,
+    borderRadius: 18,
+    borderWidth: 1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  followUpBadge: {
+    position: 'absolute',
+    top: -6, right: -6,
+    width: 24, height: 24,
+    borderRadius: 12,
+    backgroundColor: '#ef4444',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#fff',
+    zIndex: 2,
+  },
+  followUpName: { fontSize: 14, fontWeight: '700', marginBottom: 2 },
+  followUpSub: { fontSize: 11, marginBottom: 10 },
+  contactBtn: {
+    paddingVertical: 6,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  contactBtnText: { fontSize: 11, fontWeight: '700' },
 });
