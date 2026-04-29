@@ -26,20 +26,21 @@ export default function CourseDetailsScreen() {
 
   // Forms
   const [newPeriod, setNewPeriod] = useState({ name: '', start_date: '', end_date: '' });
-  const [newTeacher, setNewTeacher] = useState({ name: '', email: '', phone: '' });
+  const [newTeacher, setNewTeacher] = useState({ name: '', email: '', password: '', phone: '', course_id: 0 });
 
   const loadData = async () => {
     try {
-      // Necesitamos cargar los maestros y periodos generales de la iglesia
+      setLoading(true);
       const [pData, tData] = await Promise.all([
         educationService.getPeriods(),
         educationService.getTeachers()
       ]);
-      setPeriods(Array.isArray(pData) ? pData : []);
+      
+      // Filtrar periodos que pertenecen a este curso
+      const coursePeriods = (Array.isArray(pData) ? pData : []).filter(p => p.course_id === Number(id));
+      setPeriods(coursePeriods);
       setTeachers(Array.isArray(tData) ? tData : []);
       
-      // Intentamos encontrar el curso actual en el catalogo (o podriamos tener un getCourseById)
-      // Por ahora, asumimos que tenemos los datos del curso o los refrescamos si es necesario
     } catch (error) {
       console.error("Error loading course details:", error);
     } finally {
@@ -66,13 +67,22 @@ export default function CourseDetailsScreen() {
   };
 
   const handleCreateTeacher = async () => {
-    if (!newTeacher.name) return;
+    if (!newTeacher.name || !newTeacher.password) {
+      alert("Nombre y Contraseña son obligatorios");
+      return;
+    }
     try {
-      const created = await educationService.createTeacher(newTeacher);
-      await handleAssignTeacher(created.id);
+      const payload = {
+        ...newTeacher,
+        course_id: Number(id) // Siempre asignado a este curso "vitalicio"
+      };
+      await educationService.createTeacher(payload);
       setCreateTeacherModal(false);
-      setNewTeacher({ name: '', email: '', phone: '' });
+      setNewTeacher({ name: '', email: '', password: '', phone: '', course_id: 0 });
+      loadData();
+      alert("Maestro titular creado con éxito");
     } catch (error) {
+      console.error(error);
       alert("Error al crear maestro");
     }
   };
@@ -80,7 +90,10 @@ export default function CourseDetailsScreen() {
   const handleCreatePeriod = async () => {
     if (!newPeriod.name) return;
     try {
-      await educationService.createPeriod(newPeriod);
+      await educationService.createPeriod({
+        ...newPeriod,
+        course_id: Number(id)
+      });
       setPeriodModal(false);
       setNewPeriod({ name: '', start_date: '', end_date: '' });
       loadData();
@@ -125,9 +138,6 @@ export default function CourseDetailsScreen() {
           <View style={s.section}>
             <View style={s.sectionHeader}>
               <Text style={[s.sectionTitle, { color: t.text }]}>Maestro Titular</Text>
-              <TouchableOpacity onPress={() => setTeacherModal(true)}>
-                <Text style={[s.actionText, { color: t.accent }]}>Cambiar</Text>
-              </TouchableOpacity>
             </View>
             
             <View style={[s.mainCard, { backgroundColor: t.card, borderColor: t.border }]}>
@@ -135,13 +145,17 @@ export default function CourseDetailsScreen() {
                 <Ionicons name="person" size={30} color={t.accent} />
               </View>
               <View style={s.cardInfo}>
-                <Text style={[s.cardTitle, { color: t.text }]}>Asignar Maestro Único</Text>
-                <Text style={[s.cardSub, { color: t.textSec }]}>Este maestro será el responsable de la materia en todos los periodos.</Text>
+                <Text style={[s.cardTitle, { color: t.text }]}>
+                  {teachers.find(tr => tr.course_id === Number(id))?.name || "No asignado"}
+                </Text>
+                <Text style={[s.cardSub, { color: t.textSec }]}>
+                  Encargado vitalicio de impartir esta materia.
+                </Text>
                 <TouchableOpacity 
                   style={[s.assignBtn, { backgroundColor: t.accent }]}
                   onPress={() => setTeacherModal(true)}
                 >
-                  <Text style={s.assignBtnText}>Gestionar Maestro</Text>
+                  <Text style={s.assignBtnText}>Cambiar / Asignar</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -165,17 +179,27 @@ export default function CourseDetailsScreen() {
               </View>
             ) : (
               <View style={s.periodList}>
-                {periods.map(period => (
-                  <View key={period.id} style={[s.periodItem, { backgroundColor: t.card, borderColor: t.border }]}>
-                    <View style={s.periodInfo}>
-                      <Text style={[s.periodName, { color: t.text }]}>{period.name}</Text>
-                      <Text style={[s.periodDates, { color: t.textSec }]}>
-                        {period.start_date || 'Sin inicio'} • {period.end_date || 'Sin fin'}
-                      </Text>
+                {periods.map(period => {
+                  const courseTeacher = teachers.find(tr => tr.course_id === Number(id));
+                  return (
+                    <View key={period.id} style={[s.periodItem, { backgroundColor: t.card, borderColor: t.border }]}>
+                      <View style={s.periodInfo}>
+                        <Text style={[s.periodName, { color: t.text }]}>{period.name}</Text>
+                        <Text style={[s.periodDates, { color: t.textSec }]}>
+                          {period.start_date || 'Sin inicio'} • {period.end_date || 'Sin fin'}
+                        </Text>
+                        
+                        {courseTeacher && (
+                          <View style={s.assignedTeacher}>
+                            <Ionicons name="person-circle" size={16} color={t.accent} />
+                            <Text style={[s.teacherName, { color: t.accent }]}>Maestro: {courseTeacher.name}</Text>
+                          </View>
+                        )}
+                      </View>
+                      <View style={[s.statusDot, { backgroundColor: period.status === 'active' ? '#10b981' : '#6b7280' }]} />
                     </View>
-                    <View style={[s.statusDot, { backgroundColor: period.status === 'active' ? '#10b981' : '#6b7280' }]} />
-                  </View>
-                ))}
+                  );
+                })}
               </View>
             )}
           </View>
@@ -221,31 +245,49 @@ export default function CourseDetailsScreen() {
       {/* Modal Crear Maestro */}
       <Modal visible={createTeacherModal} animationType="slide" transparent>
         <View style={s.modalOverlay}>
-          <View style={[s.modalContent, { backgroundColor: t.card }]}>
-            <Text style={[s.modalTitle, { color: t.text }]}>Nuevo Maestro</Text>
-            <TextInput 
-              placeholder="Nombre del maestro"
-              placeholderTextColor={t.textSec}
-              style={[s.input, { backgroundColor: t.input, color: t.text }]}
-              value={newTeacher.name}
-              onChangeText={text => setNewTeacher({...newTeacher, name: text})}
-            />
-            <TextInput 
-              placeholder="Email (opcional)"
-              placeholderTextColor={t.textSec}
-              style={[s.input, { backgroundColor: t.input, color: t.text }]}
-              value={newTeacher.email}
-              onChangeText={text => setNewTeacher({...newTeacher, email: text})}
-            />
-            <View style={s.modalButtons}>
-              <TouchableOpacity onPress={() => setCreateTeacherModal(false)} style={s.btnSec}>
-                <Text style={{ color: t.textSec }}>Cancelar</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={handleCreateTeacher} style={[s.btnPri, { backgroundColor: t.accent }]}>
-                <Text style={{ color: "#fff", fontWeight: '700' }}>Guardar y Asignar</Text>
-              </TouchableOpacity>
+          <ScrollView contentContainerStyle={{ justifyContent: 'center', flexGrow: 1 }}>
+            <View style={[s.modalContent, { backgroundColor: t.card }]}>
+              <Text style={[s.modalTitle, { color: t.text }]}>Nuevo Maestro</Text>
+              
+              <Text style={{ color: t.textSec, fontSize: 12, marginBottom: -8 }}>Información Básica</Text>
+              <TextInput 
+                placeholder="Nombre completo"
+                placeholderTextColor={t.textSec}
+                style={[s.input, { backgroundColor: t.input, color: t.text }]}
+                value={newTeacher.name}
+                onChangeText={text => setNewTeacher({...newTeacher, name: text})}
+              />
+              <TextInput 
+                placeholder="Email (para el acceso)"
+                placeholderTextColor={t.textSec}
+                style={[s.input, { backgroundColor: t.input, color: t.text }]}
+                value={newTeacher.email}
+                onChangeText={text => setNewTeacher({...newTeacher, email: text})}
+                autoCapitalize="none"
+                keyboardType="email-address"
+              />
+              <TextInput 
+                placeholder="Contraseña"
+                placeholderTextColor={t.textSec}
+                style={[s.input, { backgroundColor: t.input, color: t.text }]}
+                value={newTeacher.password}
+                onChangeText={text => setNewTeacher({...newTeacher, password: text})}
+                secureTextEntry
+              />
+
+              <View style={s.modalButtons}>
+                <TouchableOpacity onPress={() => setCreateTeacherModal(false)} style={s.btnSec}>
+                  <Text style={{ color: t.textSec }}>Cancelar</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  onPress={handleCreateTeacher} 
+                  style={[s.btnPri, { backgroundColor: t.accent }]}
+                >
+                  <Text style={{ color: "#fff", fontWeight: '700' }}>Guardar Maestro Titular</Text>
+                </TouchableOpacity>
+              </View>
             </View>
-          </View>
+          </ScrollView>
         </View>
       </Modal>
 
@@ -316,4 +358,9 @@ const s = StyleSheet.create({
   avatarSmall: { width: 32, height: 32, borderRadius: 16, justifyContent: "center", alignItems: "center", marginRight: 12 },
   teacherItemName: { fontSize: 16, fontWeight: "600" },
   closeBtn: { marginTop: 10, alignItems: "center", padding: 10 },
+  periodTag: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, borderWidth: 1, borderColor: 'transparent' },
+  assignedTeacher: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 8 },
+  teacherName: { fontSize: 13, fontWeight: '700' },
+  noTeacher: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 8 },
+  noTeacherText: { fontSize: 12, fontStyle: 'italic' },
 });

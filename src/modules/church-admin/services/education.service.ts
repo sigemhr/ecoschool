@@ -47,6 +47,8 @@ export interface Course {
 export interface Teacher {
   id: number;
   church_id: number;
+  user_id: number | null;
+  course_id: number | null;
   name: string;
   email: string | null;
   phone: string | null;
@@ -56,10 +58,12 @@ export interface Teacher {
 export interface SchoolPeriod {
   id: number;
   church_id: number;
+  course_id: number;
   name: string;
   start_date: string | null;
   end_date: string | null;
   status: 'active' | 'closed';
+  teacher?: Teacher; // Opcional, para mostrar el maestro del periodo
 }
 
 export const educationService = {
@@ -79,9 +83,15 @@ export const educationService = {
     return data.data || data;
   },
 
-  createTeacher: async (payload: { name: string; email?: string; phone?: string }): Promise<Teacher> => {
-    const { data } = await api.post<Teacher>('/my-church/teachers', payload);
-    return data;
+  createTeacher: async (payload: { 
+    name: string; 
+    email?: string; 
+    password?: string;
+    phone?: string;
+    course_id?: number;
+  }): Promise<Teacher> => {
+    const { data } = await api.post<any>('/my-church/teachers', payload);
+    return data.data || data;
   },
 
   assignTeacher: async (courseId: number, teacherId: number): Promise<void> => {
@@ -98,8 +108,13 @@ export const educationService = {
     return data.data || data;
   },
 
-  createPeriod: async (payload: { name: string; start_date?: string; end_date?: string }): Promise<SchoolPeriod> => {
-    const { data } = await api.post<SchoolPeriod>('/my-church/periods', payload);
-    return data;
+  createPeriod: async (payload: { 
+    course_id: number;
+    name: string; 
+    start_date?: string; 
+    end_date?: string;
+  }): Promise<SchoolPeriod> => {
+    const { data } = await api.post<any>('/my-church/periods', payload);
+    return data.data || data;
   },
 };
