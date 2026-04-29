@@ -74,6 +74,7 @@ export interface Student {
   sex: 'M' | 'F' | null;
   is_baptized: boolean;
   phone: string | null;
+  requested_book?: boolean;
 }
 
 export const educationService = {
@@ -149,8 +150,17 @@ export const educationService = {
     return data.data || data;
   },
 
-  saveAttendance: async (periodId: number, date: string, attendances: { student_id: number, is_present: boolean }[]): Promise<void> => {
-    await api.post(`/teaching/periods/${periodId}/attendance`, { date, attendances });
+  saveAttendance: async (
+    periodId: number, 
+    date: string, 
+    attendances: { student_id: number, is_present: boolean }[],
+    sessionData?: { topic_number?: string, topic_name?: string, comments?: string }
+  ): Promise<void> => {
+    await api.post(`/teaching/periods/${periodId}/attendance`, { 
+      date, 
+      attendances,
+      ...sessionData
+    });
   },
 
   getAttendance: async (periodId: number, date: string): Promise<any[]> => {

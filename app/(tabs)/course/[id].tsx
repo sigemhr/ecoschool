@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import {
   View, Text, ScrollView, StyleSheet, TouchableOpacity,
-  ActivityIndicator, RefreshControl, useColorScheme, Modal, TextInput, FlatList,
+  ActivityIndicator, RefreshControl, useColorScheme, Modal, TextInput, FlatList, Switch
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -41,8 +41,9 @@ export default function CourseDetailsScreen() {
   // Forms
   const [newPeriod, setNewPeriod] = useState({ name: '', start_date: '', end_date: '' });
   const [newTeacher, setNewTeacher] = useState({ name: '', email: '', password: '', phone: '', course_id: 0 });
-  const [newStudent, setNewStudent] = useState({ name: '', age: '', sex: 'M' as 'M'|'F', is_baptized: false, phone: '' });
+  const [newStudent, setNewStudent] = useState({ name: '', age: '', sex: 'M' as 'M'|'F', is_baptized: false, requested_book: false, phone: '' });
   const [attendanceList, setAttendanceList] = useState<any[]>([]);
+  const [sessionInfo, setSessionInfo] = useState({ topic_number: '', topic_name: '', comments: '' });
 
   const loadData = async () => {
     try {
@@ -115,7 +116,7 @@ export default function CourseDetailsScreen() {
         age: newStudent.age ? Number(newStudent.age) : null
       });
       setEnrollModal(false);
-      setNewStudent({ name: '', age: '', sex: 'M', is_baptized: false, phone: '' });
+      setNewStudent({ name: '', age: '', sex: 'M', is_baptized: false, requested_book: false, phone: '' });
       loadData();
     } catch (error) { alert("Error al inscribir alumno"); }
   };
@@ -134,14 +135,27 @@ export default function CourseDetailsScreen() {
   const openAttendance = async () => {
     const today = new Date().toISOString().split('T')[0];
     try {
-      const existing = await educationService.getAttendance(Number(period_id), today);
+      const response = await educationService.getAttendance(Number(period_id), today);
+      const { session, attendances } = response as any;
+      
+      if (session) {
+        setSessionInfo({
+          topic_number: session.topic_number || '',
+          topic_name: session.topic_name || '',
+          comments: session.comments || '',
+        });
+      } else {
+        setSessionInfo({ topic_number: '', topic_name: '', comments: '' });
+      }
+
       const list = students.map(s => {
-        const record = (existing as any[]).find(r => r.enrollment?.student_id === s.id);
+        const record = (attendances as any[]).find(r => r.enrollment?.student_id === s.id);
         return { student_id: s.id, name: s.name, is_present: record ? record.is_present : true };
       });
       setAttendanceList(list);
       setAttendanceModal(true);
     } catch (error) {
+      setSessionInfo({ topic_number: '', topic_name: '', comments: '' });
       setAttendanceList(students.map(s => ({ student_id: s.id, name: s.name, is_present: true })));
       setAttendanceModal(true);
     }
@@ -150,9 +164,9 @@ export default function CourseDetailsScreen() {
   const handleSaveAttendance = async () => {
     const today = new Date().toISOString().split('T')[0];
     try {
-      await educationService.saveAttendance(Number(period_id), today, attendanceList);
+      await educationService.saveAttendance(Number(period_id), today, attendanceList, sessionInfo);
       setAttendanceModal(false);
-      alert("Asistencia guardada correctamente");
+      alert("Asistencia y bitácora guardadas correctamente");
     } catch (error) { alert("Error al guardar asistencia"); }
   };
 
@@ -208,7 +222,12 @@ export default function CourseDetailsScreen() {
               <View key={student.id} style={[s.studentCard, { backgroundColor: t.card, borderColor: t.border }]}>
                 <View style={{ flex: 1 }}>
                   <Text style={[s.studentName, { color: t.text }]}>{student.name}</Text>
-                  <Text style={[s.studentInfo, { color: t.textSec }]}>{student.age} años • {student.phone}</Text>
+                  <Text style={[s.studentInfo, { color: t.textSec }]}>
+                    {student.age} años • {student.phone}
+                  </Text>
+                  <Text style={[s.studentInfo, { color: t.accent, fontSize: 10, fontWeight: '700' }]}>
+                    {student.is_baptized ? 'BAUTIZADO' : 'NO BAUTIZADO'} • {student.requested_book ? 'LIBRO: SÍ' : 'LIBRO: NO'}
+                  </Text>
                 </View>
                 <Ionicons name="call" size={20} color={t.accent} onPress={() => alert('Llamando...')} />
               </View>
@@ -319,6 +338,24 @@ export default function CourseDetailsScreen() {
               <TextInput placeholder="Nombre Completo" placeholderTextColor={t.textSec} style={[s.input, { backgroundColor: t.input, color: t.text }]} value={newStudent.name} onChangeText={v => setNewStudent({...newStudent, name: v})} />
               <TextInput placeholder="Edad" keyboardType="numeric" placeholderTextColor={t.textSec} style={[s.input, { backgroundColor: t.input, color: t.text }]} value={newStudent.age} onChangeText={v => setNewStudent({...newStudent, age: v})} />
               <TextInput placeholder="Teléfono" keyboardType="phone-pad" placeholderTextColor={t.textSec} style={[s.input, { backgroundColor: t.input, color: t.text }]} value={newStudent.phone} onChangeText={v => setNewStudent({...newStudent, phone: v})} />
+              
+              <View style={s.switchRow}>
+                <Text style={{ color: t.text, fontWeight: '600' }}>¿Es bautizado?</Text>
+                <Switch 
+                  value={newStudent.is_baptized} 
+                  onValueChange={v => setNewStudent({...newStudent, is_baptized: v})} 
+                  trackColor={{ true: t.accent }} 
+                />
+              </View>
+
+              <View style={s.switchRow}>
+                <Text style={{ color: t.text, fontWeight: '600' }}>¿Solicitó libro?</Text>
+                <Switch 
+                  value={newStudent.requested_book} 
+                  onValueChange={v => setNewStudent({...newStudent, requested_book: v})} 
+                  trackColor={{ true: t.accent }} 
+                />
+              </View>
               <View style={s.modalButtons}>
                 <TouchableOpacity onPress={() => setEnrollModal(false)}><Text style={{ color: t.textSec }}>Cancelar</Text></TouchableOpacity>
                 <TouchableOpacity style={[s.btnPri, { backgroundColor: t.accent }]} onPress={handleEnrollStudent}><Text style={{ color: '#fff', fontWeight: '700' }}>Inscribir</Text></TouchableOpacity>
@@ -331,8 +368,42 @@ export default function CourseDetailsScreen() {
       {/* Attendance Modal */}
       <Modal visible={attendanceModal} transparent animationType="fade">
         <View style={s.modalOverlay}>
-          <View style={[s.modalContent, { backgroundColor: t.card, height: '80%' }]}>
-            <Text style={[s.modalTitle, { color: t.text }]}>Asistencia Hoy</Text>
+          <View style={[s.modalContent, { backgroundColor: t.card, height: '90%' }]}>
+            <View style={s.modalHeader}>
+              <Text style={[s.modalTitle, { color: t.text }]}>Sesión de Clase</Text>
+              <Text style={{ color: t.accent, fontSize: 12, fontWeight: '700' }}>HOY: {new Date().toLocaleDateString()}</Text>
+            </View>
+
+            <View style={{ gap: 10, marginBottom: 15 }}>
+              <View style={{ flexDirection: 'row', gap: 10 }}>
+                <TextInput 
+                  placeholder="# Tema" 
+                  placeholderTextColor={t.textSec}
+                  style={[s.input, { flex: 1, backgroundColor: t.input, color: t.text }]} 
+                  value={sessionInfo.topic_number} 
+                  onChangeText={v => setSessionInfo({...sessionInfo, topic_number: v})} 
+                />
+                <TextInput 
+                  placeholder="Nombre del Tema" 
+                  placeholderTextColor={t.textSec}
+                  style={[s.input, { flex: 3, backgroundColor: t.input, color: t.text }]} 
+                  value={sessionInfo.topic_name} 
+                  onChangeText={v => setSessionInfo({...sessionInfo, topic_name: v})} 
+                />
+              </View>
+              <TextInput 
+                placeholder="Comentarios (Tarea, observaciones...)" 
+                placeholderTextColor={t.textSec}
+                multiline 
+                numberOfLines={3}
+                style={[s.input, { backgroundColor: t.input, color: t.text, height: 80, textAlignVertical: 'top' }]} 
+                value={sessionInfo.comments} 
+                onChangeText={v => setSessionInfo({...sessionInfo, comments: v})} 
+              />
+            </View>
+
+            <Text style={{ fontSize: 14, fontWeight: '700', color: t.textSec, marginBottom: 10 }}>LISTA DE ASISTENCIA</Text>
+            
             <FlatList
               data={attendanceList}
               keyExtractor={item => item.student_id.toString()}
@@ -357,7 +428,7 @@ export default function CourseDetailsScreen() {
             <View style={s.modalButtons}>
               <TouchableOpacity onPress={() => setAttendanceModal(false)}><Text style={{ color: t.textSec }}>Cerrar</Text></TouchableOpacity>
               <TouchableOpacity style={[s.btnPri, { backgroundColor: t.accent }]} onPress={handleSaveAttendance}>
-                <Text style={{ color: '#fff', fontWeight: '700' }}>Guardar Asistencia</Text>
+                <Text style={{ color: '#fff', fontWeight: '700' }}>Guardar Todo</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -398,6 +469,7 @@ const s = StyleSheet.create({
   largeActionBtnText: { color: '#fff', fontWeight: '800', fontSize: 16 },
   modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: 'center', padding: 20 },
   modalContent: { padding: 20, borderRadius: 20, gap: 12 },
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 },
   modalTitle: { fontSize: 18, fontWeight: "800", marginBottom: 10 },
   input: { padding: 12, borderRadius: 10, borderWidth: 1, borderColor: 'rgba(0,0,0,0.1)' },
   modalButtons: { flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', gap: 15, marginTop: 10 },
@@ -407,5 +479,6 @@ const s = StyleSheet.create({
   periodInfo: { flex: 1 },
   periodName: { fontSize: 14, fontWeight: "700" },
   periodDates: { fontSize: 11 },
-  statusDot: { width: 6, height: 6, borderRadius: 3 }
+  statusDot: { width: 6, height: 6, borderRadius: 3 },
+  switchRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 4 },
 });
