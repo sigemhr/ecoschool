@@ -19,6 +19,7 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [loginType, setLoginType] = useState<"admin" | "teacher">("admin");
   const { login, isLoading, error } = useAuth();
 
   const handleLogin = async () => {
@@ -30,7 +31,7 @@ export default function LoginPage() {
     try {
       await login({ email, password });
     } catch (err) {
-      // El error ya se gestiona en el hook y se muestra en la UI si se desea
+      // El error ya se gestiona en el hook
     }
   };
 
@@ -42,14 +43,39 @@ export default function LoginPage() {
       <ThemedView style={styles.inner}>
         <View style={styles.header}>
           <View style={styles.logoContainer}>
-            <Ionicons name="school-outline" size={80} color="#0a7ea4" />
+            <Ionicons 
+              name={loginType === "admin" ? "school-outline" : "person-outline"} 
+              size={80} 
+              color="#0a7ea4" 
+            />
           </View>
           <ThemedText type="title" style={styles.title}>
             EcoSchool
           </ThemedText>
           <ThemedText style={styles.subtitle}>
-            Inicia sesión para continuar con tu aprendizaje
+            {loginType === "admin" 
+              ? "Acceso Administrativo" 
+              : "Portal del Maestro"}
           </ThemedText>
+        </View>
+
+        <View style={styles.tabContainer}>
+          <TouchableOpacity 
+            style={[styles.tab, loginType === "admin" && styles.activeTab]}
+            onPress={() => setLoginType("admin")}
+          >
+            <Text style={[styles.tabText, loginType === "admin" && styles.activeTabText]}>
+              Administrador
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={[styles.tab, loginType === "teacher" && styles.activeTab]}
+            onPress={() => setLoginType("teacher")}
+          >
+            <Text style={[styles.tabText, loginType === "teacher" && styles.activeTabText]}>
+              Maestro
+            </Text>
+          </TouchableOpacity>
         </View>
 
         <View style={styles.form}>
@@ -149,6 +175,35 @@ const styles = StyleSheet.create({
   },
   form: {
     width: "100%",
+  },
+  tabContainer: {
+    flexDirection: "row",
+    marginBottom: 32,
+    backgroundColor: "rgba(0,0,0,0.05)",
+    borderRadius: 12,
+    padding: 4,
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: 12,
+    alignItems: "center",
+    borderRadius: 8,
+  },
+  activeTab: {
+    backgroundColor: "#fff",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  tabText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#687076",
+  },
+  activeTabText: {
+    color: "#0a7ea4",
   },
   inputGroup: {
     flexDirection: "row",

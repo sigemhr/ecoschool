@@ -66,6 +66,16 @@ export interface SchoolPeriod {
   teacher?: Teacher; // Opcional, para mostrar el maestro del periodo
 }
 
+export interface Student {
+  id: number;
+  church_id: number;
+  name: string;
+  age: number | null;
+  sex: 'M' | 'F' | null;
+  is_baptized: boolean;
+  phone: string | null;
+}
+
 export const educationService = {
   getSchools: async (): Promise<School[]> => {
     const { data } = await api.get<any>('/my-church/schools');
@@ -115,6 +125,36 @@ export const educationService = {
     end_date?: string;
   }): Promise<SchoolPeriod> => {
     const { data } = await api.post<any>('/my-church/periods', payload);
+    return data.data || data;
+  },
+
+  getMyAssignedPeriods: async (): Promise<SchoolPeriod[]> => {
+    const { data } = await api.get<any>('/my-assigned-periods');
+    return data.data || data;
+  },
+
+  // Operaciones de Enseñanza (Maestros)
+  setupPeriodDates: async (periodId: number, dates: { start_date?: string, end_date?: string }): Promise<SchoolPeriod> => {
+    const { data } = await api.patch<any>(`/teaching/periods/${periodId}/setup-dates`, dates);
+    return data.data || data;
+  },
+
+  getEnrolledStudents: async (periodId: number): Promise<Student[]> => {
+    const { data } = await api.get<any>(`/teaching/periods/${periodId}/students`);
+    return data.data || data;
+  },
+
+  enrollStudent: async (periodId: number, payload: Partial<Student>): Promise<Student> => {
+    const { data } = await api.post<any>(`/teaching/periods/${periodId}/enroll-student`, payload);
+    return data.data || data;
+  },
+
+  saveAttendance: async (periodId: number, date: string, attendances: { student_id: number, is_present: boolean }[]): Promise<void> => {
+    await api.post(`/teaching/periods/${periodId}/attendance`, { date, attendances });
+  },
+
+  getAttendance: async (periodId: number, date: string): Promise<any[]> => {
+    const { data } = await api.get<any>(`/teaching/periods/${periodId}/attendance/${date}`);
     return data.data || data;
   },
 };

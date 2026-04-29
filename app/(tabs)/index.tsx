@@ -7,6 +7,7 @@ import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "@/src/modules/auth";
+import { educationService } from "@/src/modules/church-admin/services/education.service";
 
 const { width } = Dimensions.get("window");
 const CARD_W = (width - 56) / 2;
@@ -67,6 +68,9 @@ export default function HomeScreen() {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnims = useRef(SCHOOLS.map(() => new Animated.Value(0.9))).current;
 
+  const [assignedPeriods, setAssignedPeriods] = React.useState<any[]>([]);
+  const [isLoading, setIsLoading] = React.useState(false);
+
   useEffect(() => {
     Animated.timing(fadeAnim, { toValue: 1, duration: 500, useNativeDriver: true }).start();
     SCHOOLS.forEach((_, i) => {
@@ -74,7 +78,23 @@ export default function HomeScreen() {
         toValue: 1, friction: 6, tension: 80, delay: i * 80, useNativeDriver: true,
       }).start();
     });
-  }, []);
+
+    if (user?.role === 'teacher') {
+      fetchAssignedPeriods();
+    }
+  }, [user]);
+
+  const fetchAssignedPeriods = async () => {
+    setIsLoading(true);
+    try {
+      const data = await educationService.getMyAssignedPeriods();
+      setAssignedPeriods(data);
+    } catch (err) {
+      console.error("Error fetching periods:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const t = {
     bg: isDark ? "#0a0a1a" : "#f0f2f5",
@@ -92,6 +112,18 @@ export default function HomeScreen() {
     router.push({
       pathname: "/(tabs)/school/[id]",
       params: { id: school.id, name: school.name, color: school.color }
+    });
+  };
+
+  const handlePeriodPress = (period: any) => {
+    router.push({
+      pathname: "/(tabs)/course/[id]",
+      params: { 
+        id: period.course_id, 
+        name: period.course?.name || period.name,
+        period_id: period.id,
+        period_name: period.name
+      }
     });
   };
 
@@ -126,8 +158,12 @@ export default function HomeScreen() {
           <View style={[s.qIcon, { backgroundColor: t.accentBg }]}>
             <Ionicons name="school" size={18} color={t.accent} />
           </View>
-          <Text style={[s.qValue, { color: t.text }]}>4</Text>
-          <Text style={[s.qLabel, { color: t.textSec }]}>Escuelas</Text>
+          <Text style={[s.qValue, { color: t.text }]}>
+            {user?.role === 'teacher' ? assignedPeriods.length : '4'}
+          </Text>
+          <Text style={[s.qLabel, { color: t.textSec }]}>
+            {user?.role === 'teacher' ? 'Periodos' : 'Escuelas'}
+          </Text>
         </View>
         <View style={[s.qCard, { backgroundColor: t.card, borderColor: t.border, shadowColor: t.shadow }]}>
           <View style={[s.qIcon, { backgroundColor: "rgba(34,197,94,0.08)" }]}>
@@ -148,56 +184,98 @@ export default function HomeScreen() {
       {/* ─── Section Title ────────────────────────── */}
       <View style={s.sectionHead}>
         <Text style={[s.sectionTitle, { color: t.text }]}>
-          {user?.role === 'teacher' ? 'Mis Materias Asignadas' : 'Programas Educativos'}
+          {user?.role === 'teacher' ? 'Mis Periodos Asignados' : 'Programas Educativos'}
         </Text>
         <Text style={[s.sectionSub, { color: t.textSec }]}>
-          {user?.role === 'teacher' ? 'Gestiona tus cursos y alumnos' : 'Selecciona una escuela para comenzar'}
+          {user?.role === 'teacher' ? 'Gestiona tus clases actuales' : 'Selecciona una escuela para comenzar'}
         </Text>
       </View>
 
-      {/* ─── Schools Grid ─────────────────────────── */}
+      {/* ─── Content ─────────────────────────── */}
       <View style={s.grid}>
-        {SCHOOLS.map((school, i) => (
-          <Animated.View
-            key={school.id}
-            style={{ width: CARD_W, transform: [{ scale: scaleAnims[i] }], opacity: fadeAnim }}
-          >
-            <TouchableOpacity
-              style={[s.schoolCard, {
-                backgroundColor: t.card,
-                borderColor: t.border,
-                shadowColor: t.shadow,
-              }]}
-              onPress={() => handleSchoolPress(school)}
-              activeOpacity={0.85}
+        {user?.role === 'teacher' ? (
+          assignedPeriods.length > 0 ? (
+            assignedPeriods.map((period, i) => (
+              <TouchableOpacity
+                key={period.id}
+                style={[s.periodCard, {
+                  backgroundColor: t.card,
+                  borderColor: t.border,
+                  shadowColor: t.shadow,
+                }]}
+                onPress={() => handlePeriodPress(period)}
+                activeOpacity={0.85}
+              >
+                <View style={[s.cardAccent, { backgroundColor: '#0ea5e9' }]} />
+                <View style={s.periodHeader}>
+                  <View style={[s.logoWrap, { backgroundColor: 'rgba(14,165,233,0.1)' }]}>
+                    <Ionicons name="calendar" size={30} color="#0ea5e9" />
+                  </View>
+                  <View style={s.periodInfo}>
+                    <Text style={[s.schoolName, { color: t.text }]}>{period.name}</Text>
+                    <Text style={[s.schoolFull, { color: t.textSec }]}>
+                      {period.course?.name || 'Materia'}
+                    </Text>
+                  </View>
+                </View>
+                
+                <View style={s.periodFooter}>
+                  <View style={s.periodTag}>
+                    <Text style={s.periodTagText}>ACTIVO</Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={18} color={t.textSec} />
+                </View>
+              </TouchableOpacity>
+            ))
+          ) : (
+            <View style={s.emptyState}>
+              <Ionicons name="alert-circle-outline" size={48} color={t.textSec} />
+              <Text style={[s.emptyText, { color: t.textSec }]}>No tienes periodos asignados actualmente.</Text>
+            </View>
+          )
+        ) : (
+          SCHOOLS.map((school, i) => (
+            <Animated.View
+              key={school.id}
+              style={{ width: CARD_W, transform: [{ scale: scaleAnims[i] }], opacity: fadeAnim }}
             >
-              {/* Colored accent bar */}
-              <View style={[s.cardAccent, { backgroundColor: school.color }]} />
+              <TouchableOpacity
+                style={[s.schoolCard, {
+                  backgroundColor: t.card,
+                  borderColor: t.border,
+                  shadowColor: t.shadow,
+                }]}
+                onPress={() => handleSchoolPress(school)}
+                activeOpacity={0.85}
+              >
+                {/* Colored accent bar */}
+                <View style={[s.cardAccent, { backgroundColor: school.color }]} />
 
-              {/* Logo image */}
-              <View style={[s.logoWrap, { backgroundColor: isDark ? school.colorDark : school.colorLight }]}>
-                <Image
-                  source={SCHOOL_LOGOS[school.slug]}
-                  style={s.logoImg}
-                  contentFit="contain"
-                />
-              </View>
+                {/* Logo image */}
+                <View style={[s.logoWrap, { backgroundColor: isDark ? school.colorDark : school.colorLight }]}>
+                  <Image
+                    source={SCHOOL_LOGOS[school.slug]}
+                    style={s.logoImg}
+                    contentFit="contain"
+                  />
+                </View>
 
-              {/* Name */}
-              <Text style={[s.schoolName, { color: school.color }]}>{school.name}</Text>
+                {/* Name */}
+                <Text style={[s.schoolName, { color: school.color }]}>{school.name}</Text>
 
-              {/* Full name */}
-              <Text style={[s.schoolFull, { color: t.textSec }]} numberOfLines={2}>
-                {school.fullName}
-              </Text>
+                {/* Full name */}
+                <Text style={[s.schoolFull, { color: t.textSec }]} numberOfLines={2}>
+                  {school.fullName}
+                </Text>
 
-              {/* Arrow */}
-              <View style={[s.schoolArrow, { backgroundColor: isDark ? school.colorDark : school.colorLight }]}>
-                <Ionicons name="chevron-forward" size={14} color={school.color} />
-              </View>
-            </TouchableOpacity>
-          </Animated.View>
-        ))}
+                {/* Arrow */}
+                <View style={[s.schoolArrow, { backgroundColor: isDark ? school.colorDark : school.colorLight }]}>
+                  <Ionicons name="chevron-forward" size={14} color={school.color} />
+                </View>
+              </TouchableOpacity>
+            </Animated.View>
+          ))
+        )}
       </View>
 
       <View style={{ height: 32 }} />
@@ -264,5 +342,57 @@ const s = StyleSheet.create({
     width: 28, height: 28, borderRadius: 9,
     justifyContent: "center", alignItems: "center",
     position: "absolute", bottom: 16, right: 16,
+  },
+  // Period Card (Teacher)
+  periodCard: {
+    width: '100%',
+    borderRadius: 20,
+    borderWidth: 1,
+    padding: 16,
+    overflow: "hidden",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 12,
+    elevation: 3,
+    marginBottom: 12,
+  },
+  periodHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  periodInfo: {
+    marginLeft: 16,
+    flex: 1,
+  },
+  periodFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 16,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0,0,0,0.05)',
+  },
+  periodTag: {
+    backgroundColor: 'rgba(34,197,94,0.1)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  periodTagText: {
+    color: '#16a34a',
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  emptyState: {
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 40,
+  },
+  emptyText: {
+    marginTop: 12,
+    fontSize: 14,
+    textAlign: 'center',
   },
 });
