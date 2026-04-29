@@ -48,13 +48,13 @@ export function useAuth() {
   const logout = async () => {
     setIsLoading(true);
     try {
-      await authService.logout();
-      setUser(null);
-      router.replace("/(auth)/login");
-    } catch (err) {
-      console.error("Error during logout:", err);
+      // Intentamos cerrar sesión en el servidor, pero no bloqueamos si falla
+      await authService.logout().catch(err => console.error("Logout API error:", err));
     } finally {
+      setUser(null);
       setIsLoading(false);
+      // Usar replace con un pequeño delay o asegurar que el estado se limpió
+      router.replace("/(auth)/login");
     }
   };
 
