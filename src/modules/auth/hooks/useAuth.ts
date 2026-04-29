@@ -30,7 +30,13 @@ export function useAuth() {
     try {
       const response = await authService.login(credentials);
       setUser(response.data.user);
-      router.replace("/(tabs)");
+      
+      // Redirigir según el tipo de usuario
+      if (response.data.user.is_super_admin) {
+        router.replace("/(super-admin)");
+      } else {
+        router.replace("/(tabs)");
+      }
     } catch (err: any) {
       setError(err.message);
       throw err;

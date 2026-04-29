@@ -22,13 +22,19 @@ export default function RootLayout() {
       const authenticated = await authService.isAuthenticated();
       const firstSegment = segments[0] as string;
       const inAuthGroup = firstSegment === '(auth)';
+      const inSuperAdminGroup = firstSegment === '(super-admin)';
 
       if (!authenticated && !inAuthGroup) {
         // Redirigir a login si no está autenticado y no está en el grupo de auth
         router.replace('/(auth)/login');
       } else if (authenticated && inAuthGroup) {
-        // Redirigir a tabs si está autenticado y está en el grupo de auth
-        router.replace('/(tabs)');
+        // Redirigir según tipo de usuario si está autenticado y en auth
+        const user = await authService.getCurrentUser();
+        if (user?.is_super_admin) {
+          router.replace('/(super-admin)' as any);
+        } else {
+          router.replace('/(tabs)');
+        }
       }
       setIsReady(true);
     };
@@ -43,9 +49,11 @@ export default function RootLayout() {
       <Stack>
         <Stack.Screen name="(auth)" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="(super-admin)" options={{ headerShown: false }} />
         <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
       </Stack>
       <StatusBar style="auto" />
     </ThemeProvider>
   );
 }
+

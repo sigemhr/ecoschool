@@ -49,7 +49,7 @@ export const authService = {
 
   logout: async (): Promise<void> => {
     try {
-      await api.post("auth/logout");
+      await api.post("logout");
     } finally {
       await storage.deleteItem("auth_token");
       await storage.deleteItem("user_data");

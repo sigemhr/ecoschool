@@ -6,7 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
-export default function TabLayout() {
+export default function SuperAdminLayout() {
   const colorScheme = useColorScheme();
 
   return (
@@ -16,32 +16,34 @@ export default function TabLayout() {
         headerShown: false,
         tabBarButton: HapticTab,
         tabBarStyle: {
-          backgroundColor: colorScheme === 'dark' ? '#14142b' : '#ffffff',
-          borderTopColor: colorScheme === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)',
+          backgroundColor: colorScheme === 'dark' ? '#1a1a2e' : '#ffffff',
+          borderTopColor: colorScheme === 'dark' ? '#2d2d44' : '#e5e5e5',
         },
       }}>
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Escuelas',
-          tabBarIcon: ({ color, size }) => <Ionicons name="apps-outline" size={size} color={color} />,
+          title: 'Dashboard',
+          tabBarIcon: ({ color, size }) => <Ionicons name="grid-outline" size={size} color={color} />,
         }}
       />
       <Tabs.Screen
-        name="explore"
+        name="churches"
+        options={{
+          title: 'Iglesias',
+          tabBarIcon: ({ color, size }) => <Ionicons name="business-outline" size={size} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="profile"
         options={{
           title: 'Perfil',
           tabBarIcon: ({ color, size }) => <Ionicons name="person-outline" size={size} color={color} />,
         }}
       />
+      {/* Oculta create-church de los tabs, ahora se usa desde modal en churches */}
       <Tabs.Screen
-        name="school/[id]"
-        options={{
-          href: null,
-        }}
-      />
-      <Tabs.Screen
-        name="course/[id]"
+        name="create-church"
         options={{
           href: null,
         }}

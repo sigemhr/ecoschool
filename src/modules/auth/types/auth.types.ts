@@ -3,6 +3,8 @@ export interface User {
   name: string;
   email: string;
   role: string;
+  is_super_admin: boolean;
+  church_id: number | null;
   avatar?: string;
   createdAt: string;
   updatedAt: string;
