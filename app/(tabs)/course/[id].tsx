@@ -91,21 +91,42 @@ export default function CourseDetailsScreen() {
   };
 
   const handleCreateTeacher = async () => {
-    if (!newTeacher.name || !newTeacher.password) return;
+    if (!newTeacher.name || !newTeacher.password) {
+      alert("Nombre y contraseña son obligatorios");
+      return;
+    }
     try {
-      await educationService.createTeacher({ ...newTeacher, course_id: Number(id) });
+      await educationService.createTeacher({ 
+        ...newTeacher, 
+        course_id: Number(id),
+        email: newTeacher.email || undefined,
+        phone: newTeacher.phone || undefined,
+      });
       setCreateTeacherModal(false);
+      setNewTeacher({ name: '', email: '', password: '', phone: '', course_id: 0 });
       loadData();
     } catch (error) { alert("Error al crear maestro"); }
   };
 
   const handleCreatePeriod = async () => {
-    if (!newPeriod.name) return;
+    if (!newPeriod.name) {
+      alert("El nombre del periodo es obligatorio");
+      return;
+    }
     try {
-      await educationService.createPeriod({ ...newPeriod, course_id: Number(id) });
+      await educationService.createPeriod({ 
+        ...newPeriod, 
+        course_id: Number(id),
+        start_date: newPeriod.start_date || undefined,
+        end_date: newPeriod.end_date || undefined,
+      });
       setPeriodModal(false);
+      setNewPeriod({ name: '', start_date: '', end_date: '' });
       loadData();
-    } catch (error) { alert("Error al crear periodo"); }
+    } catch (error) { 
+      console.error("Error creating period:", error);
+      alert("Error al crear periodo. Verifica las fechas (YYYY-MM-DD)."); 
+    }
   };
 
   const handleEnrollStudent = async () => {
@@ -255,9 +276,14 @@ export default function CourseDetailsScreen() {
             <Text style={[s.cardTitle, { color: t.text }]}>
               {teachers.find(tr => tr.course_id === Number(id))?.name || "No asignado"}
             </Text>
-            <TouchableOpacity style={[s.assignBtn, { backgroundColor: t.accent }]} onPress={() => setTeacherModal(true)}>
-              <Text style={s.assignBtnText}>Cambiar / Asignar</Text>
-            </TouchableOpacity>
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              <TouchableOpacity style={[s.assignBtn, { flex: 1, backgroundColor: t.accent }]} onPress={() => setTeacherModal(true)}>
+                <Text style={s.assignBtnText}>Asignar Existente</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[s.assignBtn, { flex: 1, backgroundColor: t.accent }]} onPress={() => setCreateTeacherModal(true)}>
+                <Text style={s.assignBtnText}>Crear Nuevo</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </View>
@@ -435,8 +461,118 @@ export default function CourseDetailsScreen() {
         </View>
       </Modal>
 
-      {/* Admin Modals (Minimal) */}
-      <Modal visible={periodModal} transparent><View style={s.modalOverlay}><View style={[s.modalContent, { backgroundColor: t.card }]}><TextInput placeholder="Nombre Periodo" style={s.input} value={newPeriod.name} onChangeText={v => setNewPeriod({...newPeriod, name: v})} /><TouchableOpacity onPress={handleCreatePeriod}><Text>Crear</Text></TouchableOpacity><TouchableOpacity onPress={()=>setPeriodModal(false)}><Text>Cerrar</Text></TouchableOpacity></View></View></Modal>
+      {/* Create Period Modal */}
+      <Modal visible={periodModal} transparent animationType="slide">
+        <View style={s.modalOverlay}>
+          <View style={[s.modalContent, { backgroundColor: t.card }]}>
+            <Text style={[s.modalTitle, { color: t.text }]}>Nuevo Periodo</Text>
+            <TextInput 
+              placeholder="Nombre del Periodo (Ejem: Ciclo 2026-A)" 
+              placeholderTextColor={t.textSec}
+              style={[s.input, { backgroundColor: t.input, color: t.text }]} 
+              value={newPeriod.name} 
+              onChangeText={v => setNewPeriod({...newPeriod, name: v})} 
+            />
+            <TextInput 
+              placeholder="Fecha Inicio (YYYY-MM-DD) - Opcional" 
+              placeholderTextColor={t.textSec}
+              style={[s.input, { backgroundColor: t.input, color: t.text }]} 
+              value={newPeriod.start_date} 
+              onChangeText={v => setNewPeriod({...newPeriod, start_date: v})} 
+            />
+            <TextInput 
+              placeholder="Fecha Fin (YYYY-MM-DD) - Opcional" 
+              placeholderTextColor={t.textSec}
+              style={[s.input, { backgroundColor: t.input, color: t.text }]} 
+              value={newPeriod.end_date} 
+              onChangeText={v => setNewPeriod({...newPeriod, end_date: v})} 
+            />
+            <View style={s.modalButtons}>
+              <TouchableOpacity onPress={() => setPeriodModal(false)}><Text style={{ color: t.textSec }}>Cancelar</Text></TouchableOpacity>
+              <TouchableOpacity style={[s.btnPri, { backgroundColor: t.accent }]} onPress={handleCreatePeriod}>
+                <Text style={{ color: '#fff', fontWeight: '700' }}>Crear Periodo</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Teacher Assignment Modal */}
+      <Modal visible={teacherModal} transparent animationType="fade">
+        <View style={s.modalOverlay}>
+          <View style={[s.modalContent, { backgroundColor: t.card, height: '70%' }]}>
+            <Text style={[s.modalTitle, { color: t.text }]}>Asignar Maestro</Text>
+            <FlatList
+              data={teachers}
+              keyExtractor={item => item.id.toString()}
+              renderItem={({ item }) => (
+                <TouchableOpacity 
+                  style={[s.attendanceItem, { borderBottomColor: t.border }]}
+                  onPress={() => handleAssignTeacher(item.id)}
+                >
+                  <View>
+                    <Text style={[s.studentName, { color: t.text }]}>{item.name}</Text>
+                    <Text style={{ color: t.textSec, fontSize: 12 }}>{item.email || 'Sin correo'}</Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={20} color={t.accent} />
+                </TouchableOpacity>
+              )}
+              ListEmptyComponent={<Text style={{ color: t.textSec, textAlign: 'center', marginTop: 20 }}>No hay maestros registrados</Text>}
+            />
+            <TouchableOpacity style={s.modalButtons} onPress={() => setTeacherModal(false)}>
+              <Text style={{ color: t.accent, fontWeight: '700', textAlign: 'center', width: '100%' }}>Cerrar</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Create Teacher Modal */}
+      <Modal visible={createTeacherModal} transparent animationType="slide">
+        <View style={s.modalOverlay}>
+          <ScrollView contentContainerStyle={{ justifyContent: 'center', flexGrow: 1 }}>
+            <View style={[s.modalContent, { backgroundColor: t.card }]}>
+              <Text style={[s.modalTitle, { color: t.text }]}>Nuevo Maestro</Text>
+              <TextInput 
+                placeholder="Nombre Completo" 
+                placeholderTextColor={t.textSec}
+                style={[s.input, { backgroundColor: t.input, color: t.text }]} 
+                value={newTeacher.name} 
+                onChangeText={v => setNewTeacher({...newTeacher, name: v})} 
+              />
+              <TextInput 
+                placeholder="Correo Electrónico" 
+                placeholderTextColor={t.textSec}
+                keyboardType="email-address"
+                style={[s.input, { backgroundColor: t.input, color: t.text }]} 
+                value={newTeacher.email} 
+                onChangeText={v => setNewTeacher({...newTeacher, email: v})} 
+              />
+              <TextInput 
+                placeholder="Contraseña para el maestro" 
+                placeholderTextColor={t.textSec}
+                secureTextEntry
+                style={[s.input, { backgroundColor: t.input, color: t.text }]} 
+                value={newTeacher.password} 
+                onChangeText={v => setNewTeacher({...newTeacher, password: v})} 
+              />
+              <TextInput 
+                placeholder="Teléfono (Opcional)" 
+                placeholderTextColor={t.textSec}
+                keyboardType="phone-pad"
+                style={[s.input, { backgroundColor: t.input, color: t.text }]} 
+                value={newTeacher.phone} 
+                onChangeText={v => setNewTeacher({...newTeacher, phone: v})} 
+              />
+              <View style={s.modalButtons}>
+                <TouchableOpacity onPress={() => setCreateTeacherModal(false)}><Text style={{ color: t.textSec }}>Cancelar</Text></TouchableOpacity>
+                <TouchableOpacity style={[s.btnPri, { backgroundColor: t.accent }]} onPress={handleCreateTeacher}>
+                  <Text style={{ color: '#fff', fontWeight: '700' }}>Crear y Asignar</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </ScrollView>
+        </View>
+      </Modal>
     </View>
   );
 }
