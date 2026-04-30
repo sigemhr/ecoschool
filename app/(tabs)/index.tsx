@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from "react";
 import {
   View, Text, ScrollView, StyleSheet, TouchableOpacity,
-  useColorScheme, Animated, Dimensions, Alert,
+  useColorScheme, Animated, Dimensions, Alert, Platform,
 } from "react-native";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
@@ -139,24 +139,36 @@ export default function HomeScreen() {
   };
 
   const handleMarkContacted = async (item: any) => {
-    Alert.alert(
-      "Confirmar Seguimiento",
-      `¿Deseas marcar que ya contactaste a ${item.enrollment?.student?.name}?`,
-      [
-        { text: "Cancelar", style: "cancel" },
-        { 
-          text: "Sí, marcar", 
-          onPress: async () => {
-            try {
-              await educationService.markAsContacted(item.id);
-              fetchFollowUps();
-            } catch (error) {
-              alert("Error al actualizar seguimiento");
+    if (Platform.OS === "web") {
+      const confirmed = window.confirm(`¿Deseas marcar que ya contactaste a ${item.enrollment?.student?.name}?`);
+      if (confirmed) {
+        try {
+          await educationService.markAsContacted(item.id);
+          fetchFollowUps();
+        } catch (error) {
+          alert("Error al actualizar seguimiento");
+        }
+      }
+    } else {
+      Alert.alert(
+        "Confirmar Seguimiento",
+        `¿Deseas marcar que ya contactaste a ${item.enrollment?.student?.name}?`,
+        [
+          { text: "Cancelar", style: "cancel" },
+          { 
+            text: "Sí, marcar", 
+            onPress: async () => {
+              try {
+                await educationService.markAsContacted(item.id);
+                fetchFollowUps();
+              } catch (error) {
+                alert("Error al actualizar seguimiento");
+              }
             }
           }
-        }
-      ]
-    );
+        ]
+      );
+    }
   };
 
   return (

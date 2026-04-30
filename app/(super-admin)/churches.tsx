@@ -57,17 +57,30 @@ export default function ChurchesScreen() {
   const handleStatusChange = (id: number, name: string, current: string) => {
     const opts = ["active", "suspended", "inactive"].filter(s => s !== current);
     const labels: Record<string, string> = { active: "Activar", suspended: "Suspender", inactive: "Desactivar" };
-    Alert.alert(`Cambiar estado: ${name}`, `Actual: ${current}`, [
-      ...opts.map(s => ({
-        text: labels[s],
-        style: (s === "inactive" ? "destructive" : "default") as any,
-        onPress: async () => {
-          try { await updateChurchStatus(id, s); loadChurches(); }
-          catch { Alert.alert("Error", "No se pudo actualizar"); }
-        },
-      })),
-      { text: "Cancelar", style: "cancel" },
-    ]);
+    
+    if (Platform.OS === "web") {
+      // Simplificado para web usando un prompt o confirm secuencial, o mejor solo confirm para el primer cambio sugerido
+      const nextStatus = opts[0];
+      const confirmed = window.confirm(`¿Cambiar estado de ${name} a ${labels[nextStatus]}? (Actual: ${current})`);
+      if (confirmed) {
+        (async () => {
+          try { await updateChurchStatus(id, nextStatus); loadChurches(); }
+          catch { alert("No se pudo actualizar"); }
+        })();
+      }
+    } else {
+      Alert.alert(`Cambiar estado: ${name}`, `Actual: ${current}`, [
+        ...opts.map(s => ({
+          text: labels[s],
+          style: (s === "inactive" ? "destructive" : "default") as any,
+          onPress: async () => {
+            try { await updateChurchStatus(id, s); loadChurches(); }
+            catch { Alert.alert("Error", "No se pudo actualizar"); }
+          },
+        })),
+        { text: "Cancelar", style: "cancel" },
+      ]);
+    }
   };
 
   const statusCfg = (s: string) => {

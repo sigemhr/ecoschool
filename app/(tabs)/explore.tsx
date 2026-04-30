@@ -1,7 +1,7 @@
 import React from "react";
 import {
   View, Text, ScrollView, StyleSheet, TouchableOpacity,
-  Alert, useColorScheme,
+  Alert, useColorScheme, Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "@/src/modules/auth";
@@ -25,10 +25,17 @@ export default function AdminProfileScreen() {
   };
 
   const handleLogout = () => {
-    Alert.alert("Cerrar sesión", "¿Estás seguro de que deseas salir?", [
-      { text: "Cancelar", style: "cancel" },
-      { text: "Cerrar sesión", style: "destructive", onPress: logout },
-    ]);
+    if (Platform.OS === "web") {
+      const confirmed = window.confirm("¿Estás seguro de que deseas salir?");
+      if (confirmed) {
+        logout();
+      }
+    } else {
+      Alert.alert("Cerrar sesión", "¿Estás seguro de que deseas salir?", [
+        { text: "Cancelar", style: "cancel" },
+        { text: "Cerrar sesión", style: "destructive", onPress: logout },
+      ]);
+    }
   };
 
   const infoItems = [

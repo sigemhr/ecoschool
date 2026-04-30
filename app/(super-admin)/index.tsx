@@ -2,7 +2,7 @@ import React, { useEffect, useRef } from "react";
 import {
   View, Text, ScrollView, StyleSheet, ActivityIndicator,
   RefreshControl, useColorScheme, Animated, Dimensions,
-  TouchableOpacity, Alert,
+  TouchableOpacity, Alert, Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useSuperAdmin } from "@/src/modules/super-admin";
@@ -18,10 +18,17 @@ export default function DashboardScreen() {
   const { logout } = useAuth();
 
   const handleLogout = () => {
-    Alert.alert("Cerrar sesión", "¿Estás seguro de que deseas salir?", [
-      { text: "Cancelar", style: "cancel" },
-      { text: "Cerrar sesión", style: "destructive", onPress: logout },
-    ]);
+    if (Platform.OS === "web") {
+      const confirmed = window.confirm("¿Estás seguro de que deseas salir?");
+      if (confirmed) {
+        logout();
+      }
+    } else {
+      Alert.alert("Cerrar sesión", "¿Estás seguro de que deseas salir?", [
+        { text: "Cancelar", style: "cancel" },
+        { text: "Cerrar sesión", style: "destructive", onPress: logout },
+      ]);
+    }
   };
   const [refreshing, setRefreshing] = React.useState(false);
   const fadeAnim = useRef(new Animated.Value(0)).current;
