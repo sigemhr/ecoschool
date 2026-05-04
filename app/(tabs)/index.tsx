@@ -198,7 +198,10 @@ export default function HomeScreen() {
 
       {/* ─── Quick Stats ─────────────────────────── */}
       <Animated.View style={[s.quickStats, { opacity: fadeAnim }]}>
-        <View style={[s.qCard, { backgroundColor: t.card, borderColor: t.border, shadowColor: t.shadow }]}>
+        <TouchableOpacity 
+          activeOpacity={0.7}
+          style={[s.qCard, { backgroundColor: t.card, borderColor: t.border, shadowColor: t.shadow }]}
+        >
           <View style={[s.qIcon, { backgroundColor: t.accentBg }]}>
             <Ionicons name="school" size={18} color={t.accent} />
           </View>
@@ -208,21 +211,30 @@ export default function HomeScreen() {
           <Text style={[s.qLabel, { color: t.textSec }]}>
             {user?.role === 'teacher' ? 'Periodos' : 'Escuelas'}
           </Text>
-        </View>
-        <View style={[s.qCard, { backgroundColor: t.card, borderColor: t.border, shadowColor: t.shadow }]}>
+        </TouchableOpacity>
+
+        <TouchableOpacity 
+          activeOpacity={0.7}
+          style={[s.qCard, { backgroundColor: t.card, borderColor: t.border, shadowColor: t.shadow }]}
+        >
           <View style={[s.qIcon, { backgroundColor: "rgba(34,197,94,0.08)" }]}>
             <Ionicons name="book" size={18} color="#22c55e" />
           </View>
           <Text style={[s.qValue, { color: t.text }]}>—</Text>
           <Text style={[s.qLabel, { color: t.textSec }]}>Cursos</Text>
-        </View>
-        <View style={[s.qCard, { backgroundColor: t.card, borderColor: t.border, shadowColor: t.shadow }]}>
+        </TouchableOpacity>
+
+        <TouchableOpacity 
+          activeOpacity={0.7}
+          onPress={() => router.push("/enrollment")}
+          style={[s.qCard, { backgroundColor: t.card, borderColor: t.border, shadowColor: t.shadow }]}
+        >
           <View style={[s.qIcon, { backgroundColor: "rgba(168,85,247,0.08)" }]}>
             <Ionicons name="people" size={18} color="#a855f7" />
           </View>
           <Text style={[s.qValue, { color: t.text }]}>—</Text>
           <Text style={[s.qLabel, { color: t.textSec }]}>Alumnos</Text>
-        </View>
+        </TouchableOpacity>
       </Animated.View>
 
       {/* ─── Pending Follow-ups ────────────────────── */}

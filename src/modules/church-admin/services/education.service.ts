@@ -248,4 +248,9 @@ export const educationService = {
     const { data } = await api.get<any>(`/teaching/periods/${periodId}/attendance/${date}`);
     return data.data || data;
   },
+
+  getStudentKardex: async (studentId: number): Promise<any> => {
+    const { data } = await api.get<any>(`/education/kardex/students/${studentId}`);
+    return data.data || data;
+  },
 };

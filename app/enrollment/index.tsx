@@ -192,6 +192,14 @@ export default function EnrollmentScreen() {
               
               <View style={s.cardActions}>
                 <TouchableOpacity 
+                  style={[s.actionBtn, { backgroundColor: t.card, borderColor: t.accent, borderWidth: 1, marginRight: 8 }]}
+                  onPress={() => router.push(`/(tabs)/student/${item.id}/kardex`)}
+                >
+                  <Ionicons name="document-text-outline" size={16} color={t.accent} />
+                  <Text style={[s.actionBtnText, { color: t.accent }]}>Ver Kardex</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity 
                   style={[s.actionBtn, { backgroundColor: t.accent }]}
                   onPress={() => {
                     setEnrollmentForm({ student_id: item.id, period_id: 0, requested_book: false, is_book_paid: false });
