@@ -505,4 +505,18 @@ const s = StyleSheet.create({
     alignItems: 'center',
   },
   contactBtnText: { fontSize: 11, fontWeight: '700' },
+  adminActionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 20,
+    borderWidth: 1,
+    marginTop: 10,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 3,
+  },
+  adminActionTitle: { fontSize: 16, fontWeight: '800' },
+  adminActionSub: { fontSize: 12, marginTop: 2 },
 });

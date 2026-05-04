@@ -76,6 +76,8 @@ export interface Student {
   is_baptized: boolean;
   phone: string | null;
   requested_book?: boolean;
+  is_book_paid?: boolean;
+  enrollment_id?: number | null;
 }
 
 export const educationService = {
@@ -135,6 +137,75 @@ export const educationService = {
     return data.data || data;
   },
 
+  // Admin: Alumnos
+  getStudents: async (): Promise<Student[]> => {
+    const { data } = await api.get<any>('/my-church/students');
+    return data.data || data;
+  },
+
+  createStudent: async (payload: Partial<Student>): Promise<Student> => {
+    const { data } = await api.post<any>('/my-church/students', payload);
+    return data.data || data;
+  },
+
+  updateStudent: async (id: number, payload: Partial<Student>): Promise<Student> => {
+    const { data } = await api.put<any>(`/my-church/students/${id}`, payload);
+    return data.data || data;
+  },
+
+  deleteStudent: async (id: number): Promise<void> => {
+    await api.delete(`/my-church/students/${id}`);
+  },
+
+  // Admin: Inscripciones
+  getEnrollments: async (periodId?: number): Promise<any[]> => {
+    const { data } = await api.get<any>('/my-church/enrollments', { params: { period_id: periodId } });
+    return data.data || data;
+  },
+
+  createEnrollment: async (payload: { 
+    student_id: number, 
+    period_id: number, 
+    requested_book?: boolean,
+    is_book_paid?: boolean 
+  }): Promise<any> => {
+    const { data } = await api.post<any>('/my-church/enrollments', payload);
+    return data.data || data;
+  },
+
+  updateEnrollment: async (id: number, payload: { 
+    requested_book?: boolean, 
+    is_book_paid?: boolean 
+  }): Promise<any> => {
+    const { data } = await api.put<any>(`/my-church/enrollments/${id}`, payload);
+    return data.data || data;
+  },
+
+  deleteEnrollment: async (id: number): Promise<void> => {
+    await api.delete(`/my-church/enrollments/${id}`);
+  },
+
+  // Admin: Temas de Curso
+  getCourseTopics: async (courseId: number): Promise<any[]> => {
+    const { data } = await api.get<any>(`/my-church/courses/${courseId}/topics`);
+    return data.data || data;
+  },
+
+  createCourseTopic: async (courseId: number, payload: { topic_number: number, topic_name: string }): Promise<any> => {
+    const { data } = await api.post<any>(`/my-church/courses/${courseId}/topics`, payload);
+    return data.data || data;
+  },
+
+  deleteCourseTopic: async (courseId: number, topicId: number): Promise<void> => {
+    await api.delete(`/my-church/courses/${courseId}/topics/${topicId}`);
+  },
+
+  // Teacher: Temas disponibles para un periodo
+  getAvailableTopics: async (periodId: number): Promise<any[]> => {
+    const { data } = await api.get<any>(`/teaching/periods/${periodId}/topics`);
+    return data.data || data;
+  },
+
   // Operaciones de Enseñanza (Maestros)
   setupPeriodDates: async (periodId: number, dates: { start_date?: string, end_date?: string }): Promise<SchoolPeriod> => {
     const { data } = await api.patch<any>(`/teaching/periods/${periodId}/setup-dates`, dates);
@@ -164,7 +235,7 @@ export const educationService = {
     periodId: number, 
     date: string, 
     attendances: { student_id: number, is_present: boolean }[],
-    sessionData?: { topic_number?: string, topic_name?: string, comments?: string }
+    sessionData?: { topic_id?: number, topic_number?: string, topic_name?: string, comments?: string }
   ): Promise<void> => {
     await api.post(`/teaching/periods/${periodId}/attendance`, { 
       date, 
